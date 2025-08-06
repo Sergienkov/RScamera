@@ -6,4 +6,6 @@ class SessionRepository(private val dao: SessionDao) {
     fun getAll() = dao.getAll()
 
     fun getById(id: Long) = dao.getById(id)
+
+    suspend fun updateHasNote(id: Long, hasNote: Boolean) = dao.updateHasNote(id, hasNote)
 }
