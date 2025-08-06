@@ -16,8 +16,8 @@ class SettingsRepository(private val context: Context) {
     private val fpsKey = intPreferencesKey("fps")
     private val thresholdKey = longPreferencesKey("threshold")
 
-    val resolutionFlow: Flow<String> = context.dataStore.data.map { it[resolutionKey] ?: "640x480" }
-    val fpsFlow: Flow<Int> = context.dataStore.data.map { it[fpsKey] ?: 30 }
+    val resolutionFlow: Flow<String> = context.dataStore.data.map { it[resolutionKey] ?: "848x480" }
+    val fpsFlow: Flow<Int> = context.dataStore.data.map { it[fpsKey] ?: 60 }
     val thresholdFlow: Flow<Long> = context.dataStore.data.map { it[thresholdKey] ?: 100L * 1024 * 1024 }
 
     suspend fun setResolution(value: String) {

@@ -22,7 +22,10 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_startPreview(
         JNIEnv*, jobject) {
     try {
         if (!is_streaming) {
-            pipeline.start();
+            rs2::config cfg;
+            cfg.enable_stream(RS2_STREAM_DEPTH, 848, 480, RS2_FORMAT_Z16, 60);
+            cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_RGB8, 30);
+            pipeline.start(cfg);
             is_streaming = true;
         }
         return JNI_TRUE;
@@ -118,6 +121,8 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_captureBurst(
     try {
         rs2::config cfg;
         std::string bagPath = directory + "/depth_0.1s.bag";
+        cfg.enable_stream(RS2_STREAM_DEPTH, 848, 480, RS2_FORMAT_Z16, 60);
+        cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_RGB8, 30);
         cfg.enable_record_to_file(bagPath);
         rs2::pipeline p;
         p.start(cfg);

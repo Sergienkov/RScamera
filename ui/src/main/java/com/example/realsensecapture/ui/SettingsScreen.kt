@@ -20,8 +20,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     val repository = remember { SettingsRepository(context) }
     val scope = rememberCoroutineScope()
 
-    val resolution by repository.resolutionFlow.collectAsState(initial = "640x480")
-    val fps by repository.fpsFlow.collectAsState(initial = 30)
+    val resolution by repository.resolutionFlow.collectAsState(initial = "848x480")
+    val fps by repository.fpsFlow.collectAsState(initial = 60)
     val threshold by repository.thresholdFlow.collectAsState(initial = 100L * 1024 * 1024)
 
     Column(modifier.padding(16.dp)) {
