@@ -29,6 +29,8 @@ android {
     kotlin {
         jvmToolchain(17)
     }
+
+    sourceSets["main"].jniLibs.srcDirs("src/main/jniLibs")
 }
 
 dependencies {}
