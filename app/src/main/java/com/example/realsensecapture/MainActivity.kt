@@ -45,6 +45,22 @@ class MainActivity : ComponentActivity() {
                         actions = {
                             TextButton(onClick = { showSettings = !showSettings }) {
                                 Text(if (showSettings) "Preview" else "Settings")
+
+                floatingActionButton = {
+                    FloatingActionButton(onClick = {
+                        scope.launch {
+                            val threshold = settingsRepository.thresholdFlow.first()
+                            val statFs = StatFs(filesDir.absolutePath)
+                            val available = statFs.availableBytes
+                            if (available < threshold) {
+                                snackbarHostState.showSnackbar("Not enough space")
+                                return@launch
+                            }
+                            val timestamp = Instant.now()
+                            val sessionDir = File(filesDir, "Captures/Session-${timestamp.toString()}").apply { mkdirs() }
+                            val ok = withContext(Dispatchers.IO) {
+                                NativeBridge.recordBurst(sessionDir.absolutePath)
+ main
                             }
                         }
                     )
