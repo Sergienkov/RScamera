@@ -41,8 +41,8 @@ fun PreviewScreen(modifier: Modifier = Modifier) {
             val rgb = withContext(Dispatchers.IO) { NativeBridge.getRgbFrame() }
             val depth = withContext(Dispatchers.IO) { NativeBridge.getDepthFrame() }
             rgb?.let { rgbBitmap = rgbToBitmap(it, 640, 480) }
-            depth?.let { depthBitmap = depthToBitmap(it, 640, 480) }
-            delay(33L)
+            depth?.let { depthBitmap = depthToBitmap(it, 848, 480) }
+            delay(16L)
         }
     }
     DisposableEffect(Unit) {

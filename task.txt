@@ -87,7 +87,7 @@ UI (Compose) ── ViewModel (Coroutines/StateFlow) ── Domain Use‑cases �
 
 ## 7. Алгоритм записи бурста (C++)
 
-1. **Preview‑pipeline** (RGB 1280×720\@30 fps + Depth 640×480\@90 fps) работает постоянно.
+1. **Preview‑pipeline** (RGB 1280×720\@30 fps + Depth High‑Detail 848×480\@60 fps) работает постоянно.
 2. При триггере:
 
    * Создать временный pipeline с `config.enable_record_to_file(<dir>/depth_0.1s.bag)`.
@@ -150,7 +150,7 @@ UI (Compose) ── ViewModel (Coroutines/StateFlow) ── Domain Use‑cases �
 
 | Параметр               | Значение      |
 | ---------------------- | ------------- |
-| Depth Resolution / FPS | 640×480 @ 90  |
+| Depth Resolution / FPS | High‑Detail 848×480 @ 60 |
 | RGB Resolution  / FPS  | 1280×720 @ 30 |
 | Порог свободного места | 200 MB        |
 | JPEG качество          | 90 %          |
