@@ -6,6 +6,9 @@ object NativeBridge {
     }
 
     external fun hello(): String
+    external fun startStreaming(): Boolean
+    external fun stopStreaming()
+    external fun getCombinedFrame(): ByteArray?
     external fun startPreview(): Boolean
     external fun stopPreview()
     external fun getRgbFrame(): ByteArray?
