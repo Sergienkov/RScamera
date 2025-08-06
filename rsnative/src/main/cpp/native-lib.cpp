@@ -41,6 +41,35 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_stopPreview(
     }
 }
 
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_realsensecapture_rsnative_NativeBridge_startPlayback(
+        JNIEnv* env, jobject, jstring bagPath) {
+    const char* pathChars = env->GetStringUTFChars(bagPath, nullptr);
+    std::string path(pathChars ? pathChars : "");
+    env->ReleaseStringUTFChars(bagPath, pathChars);
+    try {
+        if (!is_streaming) {
+            rs2::config cfg;
+            cfg.enable_device_from_file(path.c_str(), false);
+            pipeline.start(cfg);
+            is_streaming = true;
+        }
+        return JNI_TRUE;
+    } catch (const rs2::error&) {
+        is_streaming = false;
+        return JNI_FALSE;
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_realsensecapture_rsnative_NativeBridge_stopPlayback(
+        JNIEnv*, jobject) {
+    if (is_streaming) {
+        pipeline.stop();
+        is_streaming = false;
+    }
+}
+
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_com_example_realsensecapture_rsnative_NativeBridge_getRgbFrame(
         JNIEnv* env,
