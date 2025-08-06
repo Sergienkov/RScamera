@@ -11,4 +11,6 @@ object NativeBridge {
     external fun getRgbFrame(): ByteArray?
     external fun getDepthFrame(): ByteArray?
     external fun captureBurst(dirPath: String): Boolean
+    external fun startPlayback(path: String): Boolean
+    external fun stopPlayback()
 }
