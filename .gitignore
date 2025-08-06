@@ -4,5 +4,4 @@
 # Ignore Gradle build output directory
 build
 
-# Do not commit the Gradle wrapper JAR
 gradle/wrapper/gradle-wrapper.jar

@@ -1,3 +1,4 @@
+
 pluginManagement {
     repositories {
         google()
@@ -15,3 +16,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "RScamera"
 include(":app", ":ui", ":rsnative")
+
+rootProject.name = "RScamera"
+
