@@ -1,7 +1,10 @@
 package com.example.realsensecapture.ui
 
+import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -25,6 +28,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
+import java.io.FileOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 @Composable
 fun SessionDetailsScreen(
@@ -81,7 +87,7 @@ fun SessionDetailsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Button(onClick = { if (index > 0) index-- }) { Text("Prev") }
                 Text("${'$'}{index + 1} / ${'$'}{s.rgbCount}")
@@ -104,7 +110,19 @@ fun SessionDetailsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(onClick = {
+                    scope.launch { shareSession(context, s.id, s.folderPath) }
+                }) {
+                    Text("Share")
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Button(onClick = {
                     if (!recording) {
@@ -127,13 +145,13 @@ fun SessionDetailsScreen(
                         .height(24.dp)
                         .fillMaxWidth()
                         .background(Color.Gray),
-                    contentAlignment = Alignment.CenterStart
+                    contentAlignment = Alignment.CenterStart,
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .fillMaxWidth(level.coerceIn(0f, 1f))
-                            .background(Color.Green)
+                            .background(Color.Green),
                     )
                 }
             }
@@ -165,6 +183,33 @@ private suspend fun updateMetaNote(folder: String) =
         obj.put("hasNote", true)
         meta.writeText(obj.toString())
     }
+
+private suspend fun shareSession(context: Context, id: Long, folder: String) {
+    val zip = withContext(Dispatchers.IO) {
+        val dir = File(folder)
+        val zipFile = File(context.cacheDir, "Session-${'$'}id.zip")
+        ZipOutputStream(FileOutputStream(zipFile)).use { out ->
+            dir.walkTopDown().filter { it.isFile }.forEach { file ->
+                val entryName = dir.toURI().relativize(file.toURI()).path
+                out.putNextEntry(ZipEntry(entryName))
+                file.inputStream().use { it.copyTo(out) }
+                out.closeEntry()
+            }
+        }
+        zipFile
+    }
+    val uri = FileProvider.getUriForFile(
+        context,
+        "${'$'}{context.packageName}.provider",
+        zip
+    )
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "application/zip"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, null))
+}
 
 private fun rgbToBitmap(data: ByteArray, width: Int, height: Int): ImageBitmap {
     val pixels = IntArray(width * height)
