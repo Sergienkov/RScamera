@@ -168,7 +168,7 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_getCombinedFrame(
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_example_realsensecapture_rsnative_NativeBridge_captureBurst(
+Java_com_example_realsensecapture_rsnative_NativeBridge_recordBurst(
         JNIEnv* env,
         jobject,
         jstring dirPath) {

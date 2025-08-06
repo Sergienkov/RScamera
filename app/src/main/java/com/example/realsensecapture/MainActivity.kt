@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
                             val timestamp = Instant.now()
                             val sessionDir = File(filesDir, "Captures/Session-${timestamp.toString()}").apply { mkdirs() }
                             val ok = withContext(Dispatchers.IO) {
-                                NativeBridge.captureBurst(sessionDir.absolutePath)
+                                NativeBridge.recordBurst(sessionDir.absolutePath)
                             }
                             if (ok) {
                                 val rgbCount = sessionDir.listFiles { _, name ->
