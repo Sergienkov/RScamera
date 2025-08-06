@@ -6,4 +6,8 @@ object NativeBridge {
     }
 
     external fun hello(): String
+    external fun startPreview(): Boolean
+    external fun stopPreview()
+    external fun getRgbFrame(): ByteArray?
+    external fun getDepthFrame(): ByteArray?
 }
