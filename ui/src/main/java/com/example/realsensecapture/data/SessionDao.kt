@@ -15,4 +15,7 @@ interface SessionDao {
 
     @Query("SELECT * FROM sessions WHERE id = :id")
     fun getById(id: Long): Flow<SessionEntity?>
+
+    @Query("UPDATE sessions SET hasNote = :hasNote WHERE id = :id")
+    suspend fun updateHasNote(id: Long, hasNote: Boolean)
 }

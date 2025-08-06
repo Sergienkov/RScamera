@@ -17,24 +17,33 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.realsensecapture.data.AppDatabase
 import com.example.realsensecapture.rsnative.NativeBridge
+import com.example.realsensecapture.ui.VoiceNoteController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 
 @Composable
-fun SessionDetailsScreen(sessionId: Long, modifier: Modifier = Modifier) {
+fun SessionDetailsScreen(
+    sessionId: Long,
+    controller: VoiceNoteController,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
     val dao = remember { AppDatabase.getInstance(context).sessionDao() }
     val session by dao.getById(sessionId).collectAsState(initial = null)
+    val scope = rememberCoroutineScope()
 
     session?.let { s ->
         var index by remember { mutableStateOf(0) }
         var image by remember { mutableStateOf<ImageBitmap?>(null) }
         var comment by remember { mutableStateOf<String?>(null) }
         var playback by remember { mutableStateOf<ImageBitmap?>(null) }
+        var recording by remember { mutableStateOf(false) }
+        val level by controller.level.collectAsState()
 
         LaunchedEffect(index, s.folderPath) {
             image = loadImage(s.folderPath, index)
@@ -91,6 +100,43 @@ fun SessionDetailsScreen(sessionId: Long, modifier: Modifier = Modifier) {
             comment?.let {
                 Text(it, modifier = Modifier.padding(8.dp))
             }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(onClick = {
+                    if (!recording) {
+                        controller.start(File(s.folderPath, "note.m4a"))
+                        recording = true
+                    } else {
+                        controller.stop()
+                        recording = false
+                        scope.launch {
+                            updateMetaNote(s.folderPath)
+                            dao.updateHasNote(s.id, true)
+                        }
+                    }
+                }) {
+                    Text(if (recording) "Stop" else "Record")
+                }
+                Box(
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .height(24.dp)
+                        .fillMaxWidth()
+                        .background(Color.Gray),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(level.coerceIn(0f, 1f))
+                            .background(Color.Green)
+                    )
+                }
+            }
         }
     } ?: Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text("Loading...")
@@ -110,6 +156,14 @@ private suspend fun loadComment(folder: String): String? =
         if (!meta.exists()) return@withContext null
         val obj = JSONObject(meta.readText())
         obj.optString("comment", null)
+    }
+
+private suspend fun updateMetaNote(folder: String) =
+    withContext(Dispatchers.IO) {
+        val meta = File(folder, "meta.json")
+        val obj = if (meta.exists()) JSONObject(meta.readText()) else JSONObject()
+        obj.put("hasNote", true)
+        meta.writeText(obj.toString())
     }
 
 private fun rgbToBitmap(data: ByteArray, width: Int, height: Int): ImageBitmap {
