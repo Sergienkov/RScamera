@@ -16,4 +16,6 @@ object NativeBridge {
     external fun recordBurst(dirPath: String): Boolean
     external fun startPlayback(path: String): Boolean
     external fun stopPlayback()
+
+    fun captureBurst(dirPath: String): Boolean = recordBurst(dirPath)
 }
