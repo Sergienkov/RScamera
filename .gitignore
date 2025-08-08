@@ -5,4 +5,3 @@
 build
 
 gradle/wrapper/gradle-wrapper.jar
-rsnative/src/main/jniLibs/
