@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.realsensecapture.data.SessionRepository
+import com.example.realsensecapture.rsnative.NativeBridge
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -77,11 +78,14 @@ fun PreviewScreen(
                         errorMessage = null
 
                         val success = try {
+                            NativeBridge.stopStreaming()
                             sessionRepository.createSession()
                         } catch (t: Throwable) {
                             if (t is CancellationException) throw t
                             errorMessage = t.message ?: "Failed to start capture"
                             false
+                        } finally {
+                            NativeBridge.startStreaming()
                         }
 
                         isCapturing = false

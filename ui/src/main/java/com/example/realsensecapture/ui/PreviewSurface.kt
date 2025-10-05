@@ -38,9 +38,13 @@ fun PreviewSurface(modifier: Modifier = Modifier) {
                 val frame = NativeBridge.getCombinedFrame()
                 frame?.let {
                     val bmp = frameToBitmap(it, width, height)
-                    val canvas = surfaceView.holder.lockCanvas()
+                    val holder = surfaceView.holder
+                    if (!holder.surface.isValid) {
+                        return@let
+                    }
+                    val canvas = holder.lockCanvas()
                     canvas.drawBitmap(bmp, 0f, 0f, null)
-                    surfaceView.holder.unlockCanvasAndPost(canvas)
+                    holder.unlockCanvasAndPost(canvas)
                 }
                 delay(16L)
             }
