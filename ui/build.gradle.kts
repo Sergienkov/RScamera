@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.navigation.compose)
     kapt(libs.androidx.room.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.lifecycle.runtime.compose)

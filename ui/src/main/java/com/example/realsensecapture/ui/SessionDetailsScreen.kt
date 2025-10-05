@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,7 +19,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.realsensecapture.data.AppDatabase
+import com.example.realsensecapture.data.SessionRepository
 import com.example.realsensecapture.rsnative.NativeBridge
 import com.example.realsensecapture.ui.VoiceNoteController
 import kotlinx.coroutines.Dispatchers
@@ -36,11 +37,13 @@ import java.util.zip.ZipOutputStream
 fun SessionDetailsScreen(
     sessionId: Long,
     controller: VoiceNoteController,
-    modifier: Modifier = Modifier
+    sessionRepository: SessionRepository,
+    modifier: Modifier = Modifier,
+    onNavigateBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val dao = remember { AppDatabase.getInstance(context).sessionDao() }
-    val session by dao.getById(sessionId).collectAsState(initial = null)
+    val sessionFlow = remember(sessionRepository, sessionId) { sessionRepository.getById(sessionId) }
+    val session by sessionFlow.collectAsState(initial = null)
     val scope = rememberCoroutineScope()
 
     session?.let { s ->
@@ -73,6 +76,14 @@ fun SessionDetailsScreen(
         }
 
         Column(modifier.fillMaxSize()) {
+            TextButton(
+                onClick = onNavigateBack,
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .padding(8.dp)
+            ) {
+                Text("Back")
+            }
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -133,7 +144,7 @@ fun SessionDetailsScreen(
                         recording = false
                         scope.launch {
                             updateMetaNote(s.folderPath)
-                            dao.updateHasNote(s.id, true)
+                            sessionRepository.updateHasNote(s.id, true)
                         }
                     }
                 }) {
