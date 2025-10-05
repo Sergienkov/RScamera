@@ -16,6 +16,12 @@ fun RealSenseCaptureApp(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    val navigateToGallery: () -> Unit = {
+        navController.navigate(Screen.Gallery.route) {
+            launchSingleTop = true
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = Screen.Preview.route,
@@ -23,8 +29,10 @@ fun RealSenseCaptureApp(
     ) {
         composable(Screen.Preview.route) {
             PreviewScreen(
-                onNavigateToGallery = { navController.navigate(Screen.Gallery.route) },
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
+                sessionRepository = sessionRepository,
+                onNavigateToGallery = navigateToGallery,
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                onCaptureSuccess = navigateToGallery
             )
         }
         composable(Screen.Gallery.route) {
