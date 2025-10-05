@@ -13,6 +13,7 @@ import com.example.realsensecapture.data.SessionRepository
 fun RealSenseCaptureApp(
     sessionRepository: SessionRepository,
     voiceNoteController: VoiceNoteController,
+    settingsRepository: SettingsRepository,
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
@@ -30,6 +31,7 @@ fun RealSenseCaptureApp(
         composable(Screen.Preview.route) {
             PreviewScreen(
                 sessionRepository = sessionRepository,
+                settingsRepository = settingsRepository,
                 onNavigateToGallery = navigateToGallery,
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onCaptureSuccess = navigateToGallery
@@ -61,6 +63,7 @@ fun RealSenseCaptureApp(
         }
         composable(Screen.Settings.route) {
             SettingsScreen(
+                settingsRepository = settingsRepository,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

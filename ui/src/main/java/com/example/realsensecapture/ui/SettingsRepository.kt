@@ -12,13 +12,16 @@ import kotlinx.coroutines.flow.map
 private val Context.dataStore by preferencesDataStore("settings")
 
 class SettingsRepository(private val context: Context) {
+    companion object {
+        const val DEFAULT_THRESHOLD_BYTES: Long = 200L * 1024 * 1024
+    }
     private val resolutionKey = stringPreferencesKey("resolution")
     private val fpsKey = intPreferencesKey("fps")
     private val thresholdKey = longPreferencesKey("threshold")
 
     val resolutionFlow: Flow<String> = context.dataStore.data.map { it[resolutionKey] ?: "848x480" }
     val fpsFlow: Flow<Int> = context.dataStore.data.map { it[fpsKey] ?: 60 }
-    val thresholdFlow: Flow<Long> = context.dataStore.data.map { it[thresholdKey] ?: 100L * 1024 * 1024 }
+    val thresholdFlow: Flow<Long> = context.dataStore.data.map { it[thresholdKey] ?: DEFAULT_THRESHOLD_BYTES }
 
     suspend fun setResolution(value: String) {
         context.dataStore.edit { it[resolutionKey] = value }

@@ -39,12 +39,14 @@ import androidx.navigation.compose.rememberNavController
 import com.example.realsensecapture.data.AppDatabase
 import com.example.realsensecapture.data.SessionRepository
 import com.example.realsensecapture.ui.RealSenseCaptureApp
+import com.example.realsensecapture.ui.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var sessionRepository: SessionRepository
     private lateinit var voiceNoteController: VoiceNoteController
+    private lateinit var settingsRepository: SettingsRepository
     private var usbPermissionAction: String? = null
     private val usbPermissionFlow = MutableStateFlow(true)
     private var usbReceiverRegistered = false
@@ -63,6 +65,7 @@ class MainActivity : ComponentActivity() {
         val database = AppDatabase.getInstance(applicationContext)
         sessionRepository = SessionRepository(applicationContext, database.sessionDao())
         voiceNoteController = VoiceNoteController(this)
+        settingsRepository = SettingsRepository(applicationContext)
 
         usbPermissionAction = "${packageName}.USB_PERMISSION"
         registerUsbReceiver()
@@ -96,6 +99,7 @@ class MainActivity : ComponentActivity() {
                 RealSenseCaptureApp(
                     sessionRepository = sessionRepository,
                     voiceNoteController = voiceNoteController,
+                    settingsRepository = settingsRepository,
                     navController = navController,
                     modifier = Modifier.fillMaxSize()
                 )
