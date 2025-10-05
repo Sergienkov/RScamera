@@ -1,6 +1,7 @@
 package com.example.realsensecapture.data
 
 import android.content.Context
+import android.os.StatFs
 import java.io.File
 import java.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +30,10 @@ class SessionRepository(
         val ok = withContext(Dispatchers.IO) {
             NativeBridge.captureBurst(sessionDir.absolutePath)
         }
-        if (!ok) return false
+        if (!ok) {
+            sessionDir.deleteRecursively()
+            return false
+        }
 
         val rgbCount = sessionDir.listFiles { _, name ->
             name.startsWith("rgb_") && name.endsWith(".jpg")
@@ -61,6 +65,14 @@ class SessionRepository(
 
         return true
     }
+
+    suspend fun getAvailableSpaceBytes(): Long = withContext(Dispatchers.IO) {
+        val statFs = StatFs(context.filesDir.absolutePath)
+        statFs.availableBytes
+    }
+
+    suspend fun hasSufficientSpace(minFreeBytes: Long): Boolean =
+        getAvailableSpaceBytes() >= minFreeBytes
 
     fun getAll() = dao.getAll()
 

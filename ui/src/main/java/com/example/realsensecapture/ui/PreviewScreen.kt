@@ -17,6 +17,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +34,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PreviewScreen(
     sessionRepository: SessionRepository,
+    settingsRepository: SettingsRepository,
     modifier: Modifier = Modifier,
     onNavigateToGallery: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
@@ -41,6 +43,8 @@ fun PreviewScreen(
     var isCapturing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val freeSpaceThreshold by settingsRepository.thresholdFlow
+        .collectAsState(initial = SettingsRepository.DEFAULT_THRESHOLD_BYTES)
 
     Box(modifier = modifier.fillMaxSize()) {
         PreviewSurface(modifier = Modifier.matchParentSize())
@@ -77,15 +81,37 @@ fun PreviewScreen(
                         isCapturing = true
                         errorMessage = null
 
+                        val freeBytes = try {
+                            sessionRepository.getAvailableSpaceBytes()
+                        } catch (t: Throwable) {
+                            if (t is CancellationException) throw t
+                            errorMessage = t.message ?: "Unable to check free space"
+                            isCapturing = false
+                            return@launch
+                        }
+
+                        if (freeBytes < freeSpaceThreshold) {
+                            val requiredMb = freeSpaceThreshold / (1024 * 1024)
+                            val availableMb = freeBytes / (1024 * 1024)
+                            errorMessage =
+                                "Not enough free space (required ≥ ${'$'}requiredMb MB, available ${'$'}availableMb MB)"
+                            isCapturing = false
+                            return@launch
+                        }
+
+                        var streamingStopped = false
                         val success = try {
                             NativeBridge.stopStreaming()
+                            streamingStopped = true
                             sessionRepository.createSession()
                         } catch (t: Throwable) {
                             if (t is CancellationException) throw t
                             errorMessage = t.message ?: "Failed to start capture"
                             false
                         } finally {
-                            NativeBridge.startStreaming()
+                            if (streamingStopped) {
+                                NativeBridge.startStreaming()
+                            }
                         }
 
                         isCapturing = false
