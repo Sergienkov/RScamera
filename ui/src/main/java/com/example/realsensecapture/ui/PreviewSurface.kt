@@ -32,11 +32,14 @@ fun PreviewSurface(modifier: Modifier = Modifier) {
     LaunchedEffect(surfaceView) {
         withContext(Dispatchers.IO) {
             NativeBridge.startStreaming()
-            val width = 1280
+            val rgbWidth = 640
+            val depthWidth = 848
+            val width = rgbWidth + depthWidth
             val height = 480
+            val expectedSize = width * height * 3
             while (isActive) {
                 val frame = NativeBridge.getCombinedFrame()
-                frame?.let {
+                frame?.takeIf { it.size >= expectedSize }?.let {
                     val bmp = frameToBitmap(it, width, height)
                     val holder = surfaceView.holder
                     if (!holder.surface.isValid) {
@@ -90,8 +93,9 @@ fun PreviewSurface(modifier: Modifier = Modifier) {
 
 private fun frameToBitmap(data: ByteArray, width: Int, height: Int): Bitmap {
     val pixels = IntArray(width * height)
+    val availablePixels = minOf(pixels.size, data.size / 3)
     var i = 0
-    for (p in pixels.indices) {
+    for (p in 0 until availablePixels) {
         val r = data[i++].toInt() and 0xFF
         val g = data[i++].toInt() and 0xFF
         val b = data[i++].toInt() and 0xFF
