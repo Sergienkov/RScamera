@@ -6,12 +6,78 @@
 #include <librealsense2/rs.hpp>
 #include <vector>
 #include <algorithm>
+#include <fstream>
+#include <cmath>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-static rs2::pipeline pipeline;
 static bool is_streaming = false;
+
+#ifndef RSCAMERA_STUB_REALSENSE
+static rs2::pipeline pipeline;
+#else
+namespace {
+constexpr int kColorWidth = 640;
+constexpr int kColorHeight = 480;
+constexpr int kDepthWidth = 848;
+constexpr int kDepthHeight = 480;
+constexpr int kColorChannels = 3;
+
+struct StubFrames {
+    std::vector<uint8_t> color;
+    std::vector<uint16_t> depth;
+};
+
+static int stub_frame_counter = 0;
+
+void reset_stub_counter() {
+    stub_frame_counter = 0;
+}
+
+StubFrames generate_stub_frames() {
+    StubFrames frames;
+    frames.color.resize(kColorWidth * kColorHeight * kColorChannels);
+    frames.depth.resize(kDepthWidth * kDepthHeight);
+
+    const int frame = stub_frame_counter++;
+    for (int y = 0; y < kColorHeight; ++y) {
+        for (int x = 0; x < kColorWidth; ++x) {
+            size_t idx = (y * kColorWidth + x) * kColorChannels;
+            uint8_t r = static_cast<uint8_t>((x + frame * 5) % 256);
+            uint8_t g = static_cast<uint8_t>((y + frame * 3) % 256);
+            uint8_t b = static_cast<uint8_t>(((x + y) / 2 + frame * 7) % 256);
+            frames.color[idx] = r;
+            frames.color[idx + 1] = g;
+            frames.color[idx + 2] = b;
+        }
+    }
+
+    for (int y = 0; y < kDepthHeight; ++y) {
+        for (int x = 0; x < kDepthWidth; ++x) {
+            size_t idx = static_cast<size_t>(y) * kDepthWidth + x;
+            frames.depth[idx] = static_cast<uint16_t>(((x + frame * 11) % 400) * 160);
+        }
+    }
+
+    return frames;
+}
+
+bool write_stub_bag(const std::string& path) {
+    std::ofstream bag(path, std::ios::binary | std::ios::trunc);
+    if (!bag.good()) {
+        return false;
+    }
+    bag << "STUB";
+    return bag.good();
+}
+
+bool write_stub_jpeg(const std::string& path, const std::vector<uint8_t>& pixels) {
+    return stbi_write_jpg(path.c_str(), kColorWidth, kColorHeight, kColorChannels,
+                          pixels.data(), 90) != 0;
+}
+}  // namespace
+#endif
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_realsensecapture_rsnative_NativeBridge_hello(
@@ -23,6 +89,7 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_hello(
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_example_realsensecapture_rsnative_NativeBridge_startPreview(
         JNIEnv*, jobject) {
+#ifndef RSCAMERA_STUB_REALSENSE
     try {
         if (!is_streaming) {
             rs2::config cfg;
@@ -36,15 +103,25 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_startPreview(
         is_streaming = false;
         return JNI_FALSE;
     }
+#else
+    if (!is_streaming) {
+        reset_stub_counter();
+        is_streaming = true;
+    }
+    return JNI_TRUE;
+#endif
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_realsensecapture_rsnative_NativeBridge_stopPreview(
         JNIEnv*, jobject) {
-    if (is_streaming) {
-        pipeline.stop();
-        is_streaming = false;
+    if (!is_streaming) {
+        return;
     }
+#ifndef RSCAMERA_STUB_REALSENSE
+    pipeline.stop();
+#endif
+    is_streaming = false;
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
@@ -65,6 +142,7 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_startPlayback(
     const char* pathChars = env->GetStringUTFChars(bagPath, nullptr);
     std::string path(pathChars ? pathChars : "");
     env->ReleaseStringUTFChars(bagPath, pathChars);
+#ifndef RSCAMERA_STUB_REALSENSE
     try {
         if (!is_streaming) {
             rs2::config cfg;
@@ -77,15 +155,27 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_startPlayback(
         is_streaming = false;
         return JNI_FALSE;
     }
+#else
+    std::ifstream bag(path, std::ios::binary);
+    if (!bag.good()) {
+        return JNI_FALSE;
+    }
+    reset_stub_counter();
+    is_streaming = true;
+    return JNI_TRUE;
+#endif
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_realsensecapture_rsnative_NativeBridge_stopPlayback(
         JNIEnv*, jobject) {
-    if (is_streaming) {
-        pipeline.stop();
-        is_streaming = false;
+    if (!is_streaming) {
+        return;
     }
+#ifndef RSCAMERA_STUB_REALSENSE
+    pipeline.stop();
+#endif
+    is_streaming = false;
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
@@ -93,6 +183,7 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_getRgbFrame(
         JNIEnv* env,
         jobject) {
     if (!is_streaming) return nullptr;
+#ifndef RSCAMERA_STUB_REALSENSE
     try {
         rs2::frameset frames = pipeline.wait_for_frames();
         rs2::video_frame color = frames.get_color_frame();
@@ -104,6 +195,17 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_getRgbFrame(
     } catch (const rs2::error&) {
         return nullptr;
     }
+#else
+    StubFrames frames = generate_stub_frames();
+    const jsize size = static_cast<jsize>(frames.color.size());
+    jbyteArray result = env->NewByteArray(size);
+    if (!result) {
+        return nullptr;
+    }
+    env->SetByteArrayRegion(result, 0, size,
+                            reinterpret_cast<const jbyte*>(frames.color.data()));
+    return result;
+#endif
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
@@ -111,6 +213,7 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_getDepthFrame(
         JNIEnv* env,
         jobject) {
     if (!is_streaming) return nullptr;
+#ifndef RSCAMERA_STUB_REALSENSE
     try {
         rs2::frameset frames = pipeline.wait_for_frames();
         rs2::depth_frame depth = frames.get_depth_frame();
@@ -122,12 +225,24 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_getDepthFrame(
     } catch (const rs2::error&) {
         return nullptr;
     }
+#else
+    StubFrames frames = generate_stub_frames();
+    const jsize size = static_cast<jsize>(frames.depth.size() * sizeof(uint16_t));
+    jbyteArray result = env->NewByteArray(size);
+    if (!result) {
+        return nullptr;
+    }
+    env->SetByteArrayRegion(result, 0, size,
+                            reinterpret_cast<const jbyte*>(frames.depth.data()));
+    return result;
+#endif
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_com_example_realsensecapture_rsnative_NativeBridge_getCombinedFrame(
         JNIEnv* env, jobject) {
     if (!is_streaming) return nullptr;
+#ifndef RSCAMERA_STUB_REALSENSE
     try {
         rs2::frameset frames = pipeline.wait_for_frames();
         rs2::align align_to_color(RS2_STREAM_COLOR);
@@ -165,6 +280,33 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_getCombinedFrame(
     } catch (const rs2::error&) {
         return nullptr;
     }
+#else
+    StubFrames frames = generate_stub_frames();
+    const int combined_width = kColorWidth + kDepthWidth;
+    std::vector<uint8_t> buffer(static_cast<size_t>(combined_width) * kColorHeight * kColorChannels);
+
+    for (int y = 0; y < kColorHeight; ++y) {
+        std::memcpy(buffer.data() + (static_cast<size_t>(y) * combined_width) * kColorChannels,
+                    frames.color.data() + (static_cast<size_t>(y) * kColorWidth) * kColorChannels,
+                    static_cast<size_t>(kColorWidth) * kColorChannels);
+        for (int x = 0; x < kDepthWidth; ++x) {
+            uint16_t depth_val = frames.depth[static_cast<size_t>(y) * kDepthWidth + x];
+            uint8_t g = static_cast<uint8_t>(std::min<uint16_t>(depth_val / 32, 255));
+            size_t idx = (static_cast<size_t>(y) * combined_width + kColorWidth + x) * kColorChannels;
+            buffer[idx] = g;
+            buffer[idx + 1] = g;
+            buffer[idx + 2] = g;
+        }
+    }
+
+    jbyteArray result = env->NewByteArray(static_cast<jsize>(buffer.size()));
+    if (!result) {
+        return nullptr;
+    }
+    env->SetByteArrayRegion(result, 0, static_cast<jsize>(buffer.size()),
+                            reinterpret_cast<const jbyte*>(buffer.data()));
+    return result;
+#endif
 }
 
 extern "C" JNIEXPORT jboolean JNICALL
@@ -176,6 +318,7 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_recordBurst(
     std::string directory(pathChars ? pathChars : "");
     env->ReleaseStringUTFChars(dirPath, pathChars);
 
+#ifndef RSCAMERA_STUB_REALSENSE
     try {
         rs2::config cfg;
         std::string bagPath = directory + "/depth_0.1s.bag";
@@ -219,4 +362,36 @@ Java_com_example_realsensecapture_rsnative_NativeBridge_recordBurst(
     } catch (const rs2::error&) {
         return JNI_FALSE;
     }
+#else
+    const std::string bagPath = directory + "/depth_0.1s.bag";
+    if (!write_stub_bag(bagPath)) {
+        return JNI_FALSE;
+    }
+
+    std::vector<std::string> writtenFiles;
+    writtenFiles.reserve(5);
+    const int targetFrames = 5;
+    bool ok = true;
+    for (int i = 0; i < targetFrames; ++i) {
+        StubFrames frames = generate_stub_frames();
+        char filename[512];
+        std::snprintf(filename, sizeof(filename), "%s/rgb_%03d.jpg",
+                      directory.c_str(), i);
+        if (!write_stub_jpeg(filename, frames.color)) {
+            ok = false;
+            break;
+        }
+        writtenFiles.emplace_back(filename);
+    }
+
+    if (!ok || static_cast<int>(writtenFiles.size()) < 3) {
+        for (const auto& file : writtenFiles) {
+            std::remove(file.c_str());
+        }
+        std::remove(bagPath.c_str());
+        return JNI_FALSE;
+    }
+
+    return JNI_TRUE;
+#endif
 }

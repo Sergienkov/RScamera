@@ -6,13 +6,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,7 +45,7 @@ fun PreviewScreen(
         .collectAsState(initial = SettingsRepository.DEFAULT_THRESHOLD_BYTES)
 
     Box(modifier = modifier.fillMaxSize()) {
-        PreviewSurface(modifier = Modifier.matchParentSize())
+        PreviewSurface(modifier = Modifier.fillMaxSize())
 
         Column(
             modifier = Modifier
@@ -74,9 +72,9 @@ fun PreviewScreen(
                 )
             }
 
-            ExtendedFloatingActionButton(
+            Button(
                 onClick = {
-                    if (isCapturing) return@ExtendedFloatingActionButton
+                    if (isCapturing) return@Button
                     scope.launch {
                         isCapturing = true
                         errorMessage = null

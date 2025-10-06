@@ -3,13 +3,13 @@ package com.example.realsensecapture.ui
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
@@ -45,24 +45,24 @@ fun GalleryScreen(
     val sessionsFlow = remember(sessionRepository) { sessionRepository.getAll() }
     val sessions by sessionsFlow.collectAsState(initial = emptyList())
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TextButton(
-            onClick = onNavigateBack,
-            modifier = Modifier
-                .align(Alignment.Start)
-                .padding(8.dp)
-        ) {
-            Text("Back")
-        }
-
+    Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+                .fillMaxSize()
+                .padding(top = 56.dp, bottom = 8.dp)
         ) {
             items(sessions) { session ->
                 SessionItem(session = session, onClick = { onSessionClick(session) })
             }
+        }
+
+        TextButton(
+            onClick = onNavigateBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(8.dp)
+        ) {
+            Text("Back")
         }
     }
 }
