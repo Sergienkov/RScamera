@@ -101,7 +101,7 @@ fun SessionDetailsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Button(onClick = { if (index > 0) index-- }) { Text("Prev") }
-                Text("${'$'}{index + 1} / ${'$'}{s.rgbCount}")
+                Text("${index + 1} / ${s.rgbCount}")
                 Button(onClick = { if (index < s.rgbCount - 1) index++ }) { Text("Next") }
             }
             Box(
@@ -184,7 +184,7 @@ private suspend fun loadComment(folder: String): String? =
         val meta = File(folder, "meta.json")
         if (!meta.exists()) return@withContext null
         val obj = JSONObject(meta.readText())
-        obj.optString("comment", null)
+        if (obj.isNull("comment")) null else obj.optString("comment")
     }
 
 private suspend fun updateMetaNote(folder: String) =
@@ -198,7 +198,7 @@ private suspend fun updateMetaNote(folder: String) =
 private suspend fun shareSession(context: Context, id: Long, folder: String) {
     val zip = withContext(Dispatchers.IO) {
         val dir = File(folder)
-        val zipFile = File(context.cacheDir, "Session-${'$'}id.zip")
+        val zipFile = File(context.cacheDir, "Session-${id}.zip")
         ZipOutputStream(FileOutputStream(zipFile)).use { out ->
             dir.walkTopDown().filter { it.isFile }.forEach { file ->
                 val entryName = dir.toURI().relativize(file.toURI()).path
@@ -211,7 +211,7 @@ private suspend fun shareSession(context: Context, id: Long, folder: String) {
     }
     val uri = FileProvider.getUriForFile(
         context,
-        "${'$'}{context.packageName}.provider",
+        "${context.packageName}.provider",
         zip
     )
     val intent = Intent(Intent.ACTION_SEND).apply {
