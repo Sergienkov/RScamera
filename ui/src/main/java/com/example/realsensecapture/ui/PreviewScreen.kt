@@ -92,7 +92,7 @@ fun PreviewScreen(
                             val requiredMb = freeSpaceThreshold / (1024 * 1024)
                             val availableMb = freeBytes / (1024 * 1024)
                             errorMessage =
-                                "Not enough free space (required ≥ ${requiredMb} MB, available ${availableMb} MB)"
+                                "Not enough free space (required ≥ ${'$'}requiredMb MB, available ${'$'}availableMb MB)"
                             isCapturing = false
                             return@launch
                         }
